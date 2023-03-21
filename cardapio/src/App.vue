@@ -6,10 +6,8 @@
       <v-btn @click="openAddItemDialog">Adicionar Item</v-btn>
     </v-toolbar>
 
-    <v-data-table :headers="headers" :items="pratos.data" class="elevation-1" hide-default-footer>
-      <template v-slot:[`pratos.actions`]="{ prato }">
-        <v-icon @click="deleteItem(prato)">mdi-delete</v-icon>
-      </template>
+    <v-data-table :headers="headers" :items="pratos" class="elevation-1" hide-default-footer>
+        <v-btn @click="deletaPrato(prato)">Apagar</v-btn>
     </v-data-table>
 
   </div>
@@ -22,9 +20,9 @@ export default {
       pratos: [],
       erro: null,
       headers: [
-        { text: 'Nome', value: 'nome_prato' },
-        { text: 'Preço', value: 'preco' },
-        { text: 'Tipo', value: 'tipo'},
+        { text: 'Nome', value: 'Nome' },
+        { text: 'Preço', value: 'Preco' },
+        { text: 'Tipo', value: 'Tipo'},
         { text: 'Actions', value: 'actions', sortable: false }
       ],
     }
@@ -33,14 +31,20 @@ export default {
     try{
       const response = await axios.get('http://localhost:1337/api/cardapios')
       this.pratos = response.data.data
+      this.pratos = this.pratos.map(p =>{
+        return{
+          id: p.id,
+          ...p.attributes
+        }
+      });
     } catch(error){
       this.erro = error
     }
   },
   methods: {
-    deleteItem (prato) {
+    deletaPrato (prato) {
       const index = this.pratos.indexOf(prato)
-      if (confirm('Are you sure you want to delete this item?')) {
+      if (confirm('')) {
         axios.delete(`http://localhost:1337/api/cardapios/${prato.id}`)
           .then(() => {
             this.pratos.splice(index, 1)
