@@ -6,7 +6,7 @@
       <v-btn @click="openAddItemDialog">Adicionar Item</v-btn>
     </v-toolbar>
 
-    <v-data-table :headers="headers" :items="items" :search="search" hide-default-footer>
+    <v-data-table :headers="headers" :items="pratos" hide-default-footer>
       <template v-slot:[`item.actions`]="{ item }">
         <v-icon @click="editItem(item)">mdi-pencil</v-icon>
         <v-icon @click="deleteItem(item)">mdi-delete</v-icon>
@@ -28,7 +28,6 @@
     </v-dialog>
   </div>
 </template>
-
 <script>
 import axios from 'axios'
 export default {
@@ -38,18 +37,22 @@ export default {
       dialog: false,
       editedIndex: -1,
       editedItem: {
-        name: '',
-        price: null
+        nome_prato: '',
+        preco: null,
+        tipo: ''
       },
       defaultItem: {
-        name: '',
-        price: null
+        nome_prato: '',
+        preco: null,
+        tipo: ''
       },
       headers: [
-        { text: 'Name', value: 'name' },
-        { text: 'Price', value: 'price' },
+        { text: 'Nome', value: 'nome_prato' },
+        { text: 'Preço', value: 'preco' },
+        { text: 'Tipo', value: 'tipo'},
         { text: 'Actions', value: 'actions', sortable: false }
-      ]
+      ],
+      pratos:[]
     }
   },
   computed: {
@@ -67,7 +70,7 @@ export default {
   },
   methods: {
     initialize () {
-      axios.get('http://localhost:1337/items')
+      axios.get('http://localhost:1337/api/cardapios')
         .then(response => {
           this.items = response.data
         })
@@ -83,7 +86,7 @@ export default {
     deleteItem (item) {
       const index = this.items.indexOf(item)
       if (confirm('Are you sure you want to delete this item?')) {
-        axios.delete(`http://localhost:1337/items/${item.id}`)
+        axios.delete(`http://localhost:1337/api/cardapios/${item.id}`)
           .then(() => {
             this.items.splice(index, 1)
           })
@@ -91,7 +94,30 @@ export default {
             console.log(error)
           })
       }
-    },
+  },
+    openAddItemDialog () {
+    this.addItemDialog = true
+  },
+  closeAddItemDialog () {
+    this.addItemDialog = false
+    this.newItemName = ''
+    this.newItemPrice = ''
+  },
+  addItem () {
+    const newItem = {
+      nome_prato: this.newItemName,
+      preco: this.newItemPrice,
+      tipo: ''
+    }
+    axios.post('http://localhost:1337/api/cardapios', newItem)
+      .then(response => {
+        this.items.push(response.data)
+        this.closeAddItemDialog()
+      })
+      .catch(error => {
+        console.log(error)
+      })
+  },
     close () {
       this.dialog = false
       setTimeout(() => {
@@ -102,7 +128,7 @@ export default {
     save () {
       if (this.editedIndex > -1) {
         // Edit item
-        axios.put(`http://localhost:1337/items/${this.editedItem.id}`, this.editedItem)
+        axios.put(`http://localhost:1337/api/cardapios/${this.editedItem.id}`, this.editedItem)
           .then(response => {
             Object.assign(this.items[this.editedIndex], response.data)
           })
@@ -111,7 +137,7 @@ export default {
           })
       } else {
         // Add new item
-        axios.post('http://localhost:1337/items', this.editedItem)
+        axios.post('http://localhost:1337/api/cardapios', this.editedItem)
           .then(response => {
             this.items.push(response.data)
           })
@@ -124,3 +150,15 @@ export default {
   }
 }
 </script>
+
+<style>
+#app {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-align: center;
+  color: #2c3e50;
+  margin-top: 60px;
+}
+
+</style>
