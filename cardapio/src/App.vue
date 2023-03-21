@@ -1,90 +1,126 @@
 <template>
   <div>
-    <h1>Cardápio do Restaurante</h1>
-    <v-btn @click="dialog = true">Adicionar prato</v-btn>
-    <v-dialog v-model="dialog">
+    <v-toolbar>
+      <v-toolbar-title>Itens do Restaurante</v-toolbar-title>
+      <v-spacer></v-spacer>
+      <v-btn @click="openAddItemDialog">Adicionar Item</v-btn>
+    </v-toolbar>
+
+    <v-data-table :headers="headers" :items="items" :search="search" hide-default-footer>
+      <template v-slot:[`item.actions`]="{ item }">
+        <v-icon @click="editItem(item)">mdi-pencil</v-icon>
+        <v-icon @click="deleteItem(item)">mdi-delete</v-icon>
+      </template>
+    </v-data-table>
+
+    <v-dialog v-model="addItemDialog" max-width="500px">
       <v-card>
-        <v-card-title>Novo Prato</v-card-title>
+        <v-card-title>Adicionar Item</v-card-title>
         <v-card-text>
-          <v-form>
-            <v-text-field v-model="prato.nome" label="Nome"></v-text-field>
-            <v-text-field v-model="prato.preco" label="Preço"></v-text-field>
-          </v-form>
+          <v-text-field v-model="newItemName" label="Nome"></v-text-field>
+          <v-text-field v-model="newItemPrice" label="Preço"></v-text-field>
         </v-card-text>
         <v-card-actions>
-          <v-btn @click="dialog = false">Cancelar</v-btn>
-          <v-btn color="primary" @click="adicionarPrato">Salvar</v-btn>
+          <v-btn color="primary" @click="addItem">Adicionar</v-btn>
+          <v-btn @click="addItemDialog = false">Cancelar</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
-    <v-data-table :headers="headers" :items="pratos" :search="search" :items-per-page="10">
-      <template v-slot:item.action="{ item }">
-        <v-icon small class="mr-2" @click="editarPrato(item)">mdi-pencil</v-icon>
-        <v-icon small @click="excluirPrato(item)">mdi-delete</v-icon>
-      </template>
-    </v-data-table>
-    <v-alert v-model="alerta" :type="tipoAlerta" dismissible>
-      {{ mensagemAlerta }}
-    </v-alert>
   </div>
 </template>
 
 <script>
+import axios from 'axios'
 export default {
-  data() {
+  data () {
     return {
-      headers: [
-        { text: "Nome", value: "nome" },
-        { text: "Preço", value: "preco" },
-        { text: "Ações", value: "action", sortable: false },
-      ],
-      pratos: [
-        { nome: "Pizza", preco: 25 },
-        { nome: "Lasanha", preco: 30 },
-      ],
-      prato: { nome: "", preco: "" },
+      items: [],
       dialog: false,
-      alerta: false,
-      mensagemAlerta: "",
-      tipoAlerta: "",
-      search: "",
-    };
+      editedIndex: -1,
+      editedItem: {
+        name: '',
+        price: null
+      },
+      defaultItem: {
+        name: '',
+        price: null
+      },
+      headers: [
+        { text: 'Name', value: 'name' },
+        { text: 'Price', value: 'price' },
+        { text: 'Actions', value: 'actions', sortable: false }
+      ]
+    }
+  },
+  computed: {
+    formTitle () {
+      return this.editedIndex === -1 ? 'New Item' : 'Edit Item'
+    }
+  },
+  watch: {
+    dialog (val) {
+      val || this.close()
+    }
+  },
+  created () {
+    this.initialize()
   },
   methods: {
-    adicionarPrato() {
-      if (this.prato.nome && this.prato.preco) {
-        this.pratos.push(this.prato);
-        this.prato = { nome: "", preco: "" };
-        this.dialog = false;
-        this.mensagemAlerta = "Prato adicionado com sucesso!";
-this.tipoAlerta = "success";
-this.alerta = true;
-} else {
-this.mensagemAlerta = "Por favor, preencha o nome e o preço do prato.";
-this.tipoAlerta = "error";
-this.alerta = true;
+    initialize () {
+      axios.get('http://localhost:1337/items')
+        .then(response => {
+          this.items = response.data
+        })
+        .catch(error => {
+          console.log(error)
+        })
+    },
+    editItem (item) {
+      this.editedIndex = this.items.indexOf(item)
+      this.editedItem = Object.assign({}, item)
+      this.dialog = true
+    },
+    deleteItem (item) {
+      const index = this.items.indexOf(item)
+      if (confirm('Are you sure you want to delete this item?')) {
+        axios.delete(`http://localhost:1337/items/${item.id}`)
+          .then(() => {
+            this.items.splice(index, 1)
+          })
+          .catch(error => {
+            console.log(error)
+          })
+      }
+    },
+    close () {
+      this.dialog = false
+      setTimeout(() => {
+        this.editedItem = Object.assign({}, this.defaultItem)
+        this.editedIndex = -1
+      }, 300)
+    },
+    save () {
+      if (this.editedIndex > -1) {
+        // Edit item
+        axios.put(`http://localhost:1337/items/${this.editedItem.id}`, this.editedItem)
+          .then(response => {
+            Object.assign(this.items[this.editedIndex], response.data)
+          })
+          .catch(error => {
+            console.log(error)
+          })
+      } else {
+        // Add new item
+        axios.post('http://localhost:1337/items', this.editedItem)
+          .then(response => {
+            this.items.push(response.data)
+          })
+          .catch(error => {
+            console.log(error)
+          })
+      }
+      this.close()
+    }
+  }
 }
-},
-editarPrato(item) {
-// preencher o formulário com os dados do prato
-this.prato = { nome: item.nome, preco: item.preco };
-// abrir o modal popup para editar o prato
-this.dialog = true;
-},
-excluirPrato(item) {
-// remover o prato da lista de pratos
-const index = this.pratos.indexOf(item);
-if (index > -1) {
-this.pratos.splice(index, 1);
-this.mensagemAlerta = "Prato excluído com sucesso!";
-this.tipoAlerta = "success";
-this.alerta = true;
-} else {
-this.mensagemAlerta = "Não foi possível excluir o prato.";
-this.tipoAlerta = "error";
-this.alerta = true;
-}
-},
-},
-};
 </script>

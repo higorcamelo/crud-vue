@@ -1,0 +1,68 @@
+<template>
+  <v-app>
+    <v-container>
+      <v-row>
+        <v-col cols="12">
+          <v-card>
+            <v-toolbar>
+              <v-toolbar-title>Itens do Restaurante</v-toolbar-title>
+              <v-spacer></v-spacer>
+              <v-btn color="primary" @click="showAddDialog = true">Adicionar</v-btn>
+            </v-toolbar>
+            <v-data-table :headers="headers" :items="items" class="elevation-1">
+              <template v-slot:[`item.actions`]="{ item }">
+                <v-icon small class="mr-2" @click="editItem(item)">mdi-pencil</v-icon>
+                <v-icon small @click="deleteItem(item)">mdi-delete</v-icon>
+              </template>
+            </v-data-table>
+          </v-card>
+        </v-col>
+      </v-row>
+    </v-container>
+
+    <v-dialog v-model="showAddDialog" max-width="500">
+      <v-card>
+        <v-card-title>Adicionar item</v-card-title>
+        <v-card-text>
+          <v-form @submit.prevent="addItem">
+            <v-text-field v-model="newItem.name" label="Nome"></v-text-field>
+            <v-text-field v-model="newItem.price" label="Preço"></v-text-field>
+            <v-btn type="submit" color="primary">Adicionar</v-btn>
+          </v-form>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
+  </v-app>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      headers: [
+        { text: "Nome", value: "name" },
+        { text: "Preço", value: "price" },
+        { text: "Ações", value: "actions" },
+      ],
+      items: [
+        { name: "Prato 1", price: "20.00", actions: "" },
+        { name: "Prato 2", price: "25.00", actions: "" },
+        { name: "Prato 3", price: "30.00", actions: "" },
+      ],
+      newItem: { name: "", price: "" },
+      showAddDialog: false,
+    };
+  },
+  methods: {
+    addItem() {
+      this.items.push({ name: this.newItem.name, price: this.newItem.price, actions: "" });
+      this.newItem.name = "";
+      this.newItem.price = "";
+      this.showAddDialog = false;
+    },
+    deleteItem(item) {
+      this.items.splice(this.items.indexOf(item), 1);
+    },
+  },
+};
+</script>
