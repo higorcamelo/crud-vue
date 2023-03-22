@@ -5,7 +5,7 @@
     <table class="center">
       <tr>
         <td>
-          <v-form @submit.prevent= 'criaprato' method="criaPrato">
+          <v-form @submit.prevent="criaPrato" method="criaPrato">
             <td>
               <v-text-field label="Nome do prato" required v-model="novoPrato.nome"></v-text-field>
             </td>
@@ -76,11 +76,16 @@ export default {
     }
   },
   methods: {
-    criaPrato(){
+    async criaPrato(){
     try {
-      axios.post('http://localhost:1337/api/cardapios', this.novoPrato).then(() => {
-        axios.get('http://localhost:1337/api/cardapios')
-      })
+      await axios.post('http://localhost:1337/api/cardapios', this.novoPrato);
+      const response = await axios.get('http://localhost:1337/api/cardapios');
+      this.pratos = response.data.data.map(p => {
+        return {
+          id: p.id,
+          ...p.attributes
+        }
+      });
     } catch (error) {
       console.log(error);
     }
